@@ -1,0 +1,16 @@
+{
+  "name": "phonebook-backend-project",
+  "version": "1.0.0",
+  "description": "exercise for part 3",
+  "license": "ISC",
+  "author": "Kiya Shahidi",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
