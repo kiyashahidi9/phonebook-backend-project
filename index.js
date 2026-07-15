@@ -1,4 +1,8 @@
+require('dotenv').config();
 const express = require('express');
+// importing DB
+const Person = require('./models/person');
+
 const app = express();
 
 app.use(express.json());
@@ -38,26 +42,29 @@ function generateId() {
 
 // INFO
 app.get('/info', (request, response) => {
-  let count = persons.length;
-  let time = new Date();
-
-  response.send(`<p>Phonebook has info for ${count} people</p><p>${time}</p>`)
+  Person.find({}).then(persons => {
+    response.send(`<p>Phonebook has info for ${persons.length} people` +
+      `<p>${new Date()}</p>`
+    )
+  })
 })
 
 // GET PERSON(S) ROUTES
 app.get('/api/persons', (request, response) => {
-  response.json(persons);
+  Person.find({}).then(persons => {
+    response.json(persons);
+  })
 })
 
 app.get('/api/persons/:id', (request, response) => {
   let id = request.params.id;
-  let person = persons.find(person => person.id === id);
-
-  if (person) {
-    response.json(person);
-  } else {
-    return response.status(404).json({error: 'not found'});
-  }
+  Person.findById(id)
+    .then(person => {
+      response.json(person);
+    })
+    .catch(error => {
+      return response.status(404).send(`Person not found: ${error.message}`)
+    })
 })
 
 // DELETE PERSON ROUTES
@@ -71,6 +78,8 @@ app.delete('/api/persons/:id', (request, response) => {
 // POST PERSON ROUTES
 app.post('/api/persons', (request, response) => {
   let body = request.body;
+
+  /*
   let existingNames = persons.map(p => p.name);
 
   if (!body.name || !body.number) {
@@ -82,18 +91,24 @@ app.post('/api/persons', (request, response) => {
       error: "name must be unique"
     })
   }
+  */
 
-  let person = {
-    id: generateId(),
-    name: body.name,
-    number: body.number,
+  if (!body.name || !body.number) {
+    return response.status(404).json({
+      error: "name and/or number is missing"
+    })
   }
 
-  persons = persons.concat(person);
-  response.json(person);
+  let person = new Person({
+    name: body.name,
+    number: body.number,
+  })
+  person.save().then(person => {
+    response.json(person);
+  })
 })
 
-const PORT = 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 })
