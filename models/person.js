@@ -14,6 +14,7 @@ mongoose.connect(url, { family: 4 })
     console.log('Failed connnection to MongoDB:', error.message)
   })
 
+// DEFINING SCHEMA
 const personSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -32,6 +33,7 @@ const personSchema = new mongoose.Schema({
   },
 })
 
+// FORMATTING SCHEMA
 personSchema.set('toJSON', {
   transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString()
@@ -40,6 +42,7 @@ personSchema.set('toJSON', {
   }
 })
 
+// CREATING MODEL
 const Person = mongoose.model('Person', personSchema)
 
 module.exports = Person
