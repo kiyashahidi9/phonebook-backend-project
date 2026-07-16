@@ -1,44 +1,13 @@
+// IMPORTS
 require('dotenv').config();
 const express = require('express');
-// importing DB
 const Person = require('./models/person');
 
 const app = express();
 
+// MIDDLEWARE
 app.use(express.json());
 app.use(express.static('dist'));
-
-// DATA
-let persons = [
-  { 
-    "id": "1",
-    "name": "Arto Hellas", 
-    "number": "040-123456"
-  },
-  { 
-    "id": "2",
-    "name": "Ada Lovelace", 
-    "number": "39-44-5323523"
-  },
-  { 
-    "id": "3",
-    "name": "Dan Abramov", 
-    "number": "12-43-234345"
-  },
-  { 
-    "id": "4",
-    "name": "Mary Poppendieck", 
-    "number": "39-23-6423122"
-  }
-]
-
-// HELPERS
-function generateId() {
-  if (persons.length === 0) return 1;
-
-  let maxId = Math.max(...persons.map(p => Number(p.id)));
-  return String(maxId + 1);
-}
 
 // INFO
 app.get('/info', (request, response) => {
@@ -56,42 +25,30 @@ app.get('/api/persons', (request, response) => {
   })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
   let id = request.params.id;
+
   Person.findById(id)
     .then(person => {
+      if (!person) response.status(404).end()
       response.json(person);
     })
-    .catch(error => {
-      return response.status(404).send(`Person not found: ${error.message}`)
-    })
+    .catch(error => next(error));
 })
 
 // DELETE PERSON ROUTES
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
   let id = request.params.id;
-  persons = persons.filter(person => person.id !== id);
-
-  response.status(204).end();
+  
+  Person.findByIdAndDelete(id).then(result => {
+    response.status(204).end();
+  })
+  .catch(error => next(error));
 })
 
 // POST PERSON ROUTES
 app.post('/api/persons', (request, response) => {
   let body = request.body;
-
-  /*
-  let existingNames = persons.map(p => p.name);
-
-  if (!body.name || !body.number) {
-    return response.status(404).json({
-      error: "name and/or number is missing"
-    })
-  } else if (existingNames.includes(body.name)) {
-    return response.status(404).json({
-      error: "name must be unique"
-    })
-  }
-  */
 
   if (!body.name || !body.number) {
     return response.status(404).json({
@@ -108,6 +65,37 @@ app.post('/api/persons', (request, response) => {
   })
 })
 
+// UPDATE NUMBER
+app.patch('/api/persons/:id', (request, response, next) => {
+  let body = request.body;
+  let id = request.params.id;
+
+  Person.findById(id).then(person => {
+    if (!person) response.status(404).end();
+
+    person.number = body.number;
+
+    person.save().then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+  })
+  .catch(error => next(error));
+})
+
+// ERROR MIDDLEWARE
+function errorHandler(error, request, response, next) {
+  console.log(error);
+
+  if (error.name === 'CastError') {
+    response.status(400).send({error: "malformatted id"})
+  }
+
+  next(error);
+}
+
+app.use(errorHandler)
+
+// STARTING APP
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
