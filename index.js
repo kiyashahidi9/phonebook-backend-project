@@ -39,7 +39,7 @@ app.get('/api/persons/:id', (request, response, next) => {
 // DELETE PERSON ROUTES
 app.delete('/api/persons/:id', (request, response, next) => {
   let id = request.params.id;
-  
+
   Person.findByIdAndDelete(id).then(result => {
     response.status(204).end();
   })
@@ -47,14 +47,8 @@ app.delete('/api/persons/:id', (request, response, next) => {
 })
 
 // POST PERSON ROUTES
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   let body = request.body;
-
-  if (!body.name || !body.number) {
-    return response.status(404).json({
-      error: "name and/or number is missing"
-    })
-  }
 
   let person = new Person({
     name: body.name,
@@ -63,6 +57,7 @@ app.post('/api/persons', (request, response) => {
   person.save().then(person => {
     response.json(person);
   })
+  .catch(error => next(error));
 })
 
 // UPDATE NUMBER
@@ -88,6 +83,8 @@ function errorHandler(error, request, response, next) {
 
   if (error.name === 'CastError') {
     response.status(400).send({error: "malformatted id"})
+  } else if (error.name === 'ValidationError') {
+    response.status(400).send({error: error.message});
   }
 
   next(error);
